@@ -22,13 +22,73 @@ app.get("/health", (req: Request, res: Response) => {
   });
 });
 
-app.post("/telegram/webhook", (req: Request, res: Response) => {
-  console.log("Telegram webhook update:", JSON.stringify(req.body, null, 2));
+async function sendTelegramMessage(chatId: number, text: string) {
+  if (!TELEGRAM_BOT_TOKEN) {
+    console.error("TELEGRAM_BOT_TOKEN is not configured");
+    return;
+  }
 
-  res.status(200).json({
-    ok: true,
-    message: "Webhook received",
+  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text,
+    }),
   });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    console.error("Telegram sendMessage error:", data);
+  }
+
+  return data;
+}
+
+app.post("/telegram/webhook", async (req: Request, res: Response) => {
+  try {
+    console.log("Telegram webhook update:", JSON.stringify(req.body, null, 2));
+
+    const update = req.body;
+    const message = update.message;
+
+    if (!message) {
+      res.status(200).json({
+        ok: true,
+        message: "No message in update",
+      });
+      return;
+    }
+
+    const chatId = message.chat.id;
+    const text = message.text || "";
+
+    if (text === "/start") {
+      await sendTelegramMessage(
+        chatId,
+        "سلام 👋\nبه ربات کلاغ خوش آمدی.\n\nبرای شروع، به‌زودی ثبت‌نام را فعال می‌کنیم."
+      );
+    } else {
+      await sendTelegramMessage(chatId, "پیامت دریافت شد ✅");
+    }
+
+    res.status(200).json({
+      ok: true,
+      message: "Webhook processed",
+    });
+  } catch (error) {
+    console.error("Telegram webhook error:", error);
+
+    res.status(200).json({
+      ok: false,
+      message: "Webhook error handled",
+    });
+  }
 });
 
 app.listen(PORT, () => {
