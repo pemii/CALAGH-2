@@ -5,6 +5,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 10000;
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
 app.use(express.json());
 
@@ -17,6 +18,7 @@ app.get("/health", (req: Request, res: Response) => {
     ok: true,
     service: "CALAGH-2",
     message: "Server is healthy",
+    telegramBotConfigured: !!TELEGRAM_BOT_TOKEN,
   });
 });
 
@@ -31,4 +33,7 @@ app.post("/telegram/webhook", (req: Request, res: Response) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(
+    `Telegram bot token configured: ${TELEGRAM_BOT_TOKEN ? "YES" : "NO"}`
+  );
 });
